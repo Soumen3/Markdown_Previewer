@@ -1,10 +1,12 @@
 import React, { useEffect } from 'react'
 import { useDispatch } from 'react-redux'
+import { useNavigate } from 'react-router-dom'
 import { setMounted, setTheme } from '../features/theme/themeSlice'
 import { useTheme } from '../hooks/useTheme'
 
 function Header() {
   const dispatch = useDispatch()
+  const navigate = useNavigate()
   const { isDark, mounted, toggle, isMobileMenuOpen, toggleMobileMenu: toggleMobile, closeMobileMenu } = useTheme()
 
   // Check for saved theme preference or default to light mode
@@ -42,6 +44,10 @@ function Header() {
 
   const handleMobileMenuClose = () => {
     closeMobileMenu()
+  }
+
+  const handleGetStartedClick = () => {
+    navigate('/login')
   }
 
   // Prevent hydration mismatch
@@ -82,7 +88,10 @@ function Header() {
             )}
           </button>
           
-          <button className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 transition-colors">
+          <button 
+            onClick={handleGetStartedClick}
+            className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 transition-colors"
+          >
             Get Started
           </button>
         </div>
@@ -153,8 +162,11 @@ function Header() {
               About
             </a>
             <button 
+              onClick={() => {
+                handleGetStartedClick()
+                handleMobileMenuClose()
+              }}
               className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 transition-colors text-left font-medium"
-              onClick={handleMobileMenuClose}
             >
               Get Started
             </button>
