@@ -82,6 +82,24 @@ function Signup() {
     }
   }
 
+  const handleGitHubSignup = async () => {
+    try {
+      toast.githubRedirect('signup')
+      
+      // Get the intended destination and encode it in the success URL
+      const successUrl = `${window.location.origin}${from}`
+      
+      // Initiate GitHub OAuth with AuthService
+      await authService.loginWithGitHub(
+        successUrl, // Success redirect to intended destination
+        `${window.location.origin}/signup` // Failure redirect
+      )
+    } catch (error) {
+      console.error('GitHub signup error:', error)
+      toast.signupError(error.message)
+    }
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col justify-center py-6 px-4 sm:py-12 sm:px-6 lg:px-8 animate-in fade-in duration-500">
       <div className="sm:mx-auto sm:w-full sm:max-w-md animate-in slide-in-from-top duration-700 delay-200">
@@ -121,6 +139,7 @@ function Signup() {
         <SignupForm 
           onSubmit={handleSubmit}
           onGoogleSignup={handleGoogleSignup}
+          onGitHubSignup={handleGitHubSignup}
           isLoading={isLoading}
         />
 

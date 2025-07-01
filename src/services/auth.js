@@ -69,6 +69,14 @@ export class AuthService {
     }
   }
 
+  async loginWithGitHub(successUrl, failureUrl) {
+    try {
+      await account.createOAuth2Session('github', successUrl, failureUrl)
+    } catch (error) {
+      throw this.handleAuthError(error)
+    }
+  }
+
 
   async getCurrentUser() {
     try {

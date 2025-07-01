@@ -75,6 +75,13 @@ export const useToast = () => {
       })
     },
     
+    githubRedirect: (action = 'sign in') => {
+      return toast.info(`Redirecting to GitHub...`, {
+        title: `GitHub ${action === 'signup' ? 'Sign Up' : 'Sign In'}`,
+        duration: 3000
+      })
+    },
+    
     // General app notifications
     fileCreated: (fileName) => {
       return toast.success(`"${fileName}" created successfully! ✨`, {

@@ -22,6 +22,7 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null)
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [justLoggedOut, setJustLoggedOut] = useState(false)
 
   const refreshAuth = async () => {
     try {
@@ -47,6 +48,7 @@ export const AuthProvider = ({ children }) => {
   const login = async (userData) => {
     setUser(userData.user || userData)
     setIsLoggedIn(true)
+    setJustLoggedOut(false) // Clear logout flag on login
     console.log('Auth context: User logged in via context')
   }
 
@@ -58,7 +60,11 @@ export const AuthProvider = ({ children }) => {
     } finally {
       setUser(null)
       setIsLoggedIn(false)
+      setJustLoggedOut(true) // Set logout flag
       console.log('Auth context: User logged out via context')
+      
+      // Clear the logout flag after a short delay to allow navigation
+      setTimeout(() => setJustLoggedOut(false), 100)
     }
   }
 
@@ -70,6 +76,7 @@ export const AuthProvider = ({ children }) => {
     user,
     isLoggedIn,
     loading,
+    justLoggedOut,
     login,
     logout,
     refreshAuth

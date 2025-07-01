@@ -4,14 +4,14 @@ import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '../hooks/useToast'
 
 function ProtectedRoute({ children }) {
-  const { isLoggedIn, loading } = useAuth()
+  const { isLoggedIn, loading, justLoggedOut } = useAuth()
   const location = useLocation()
   const { toast } = useToast()
   const hasShownToast = useRef(false)
 
   // Show toast message when user tries to access protected route without being logged in
   useEffect(() => {
-    if (!loading && !isLoggedIn && !hasShownToast.current) {
+    if (!loading && !isLoggedIn && !hasShownToast.current && !justLoggedOut) {
       toast.error('Please sign in to access the dashboard', {
         title: 'Authentication Required',
         duration: 5000
@@ -23,7 +23,7 @@ function ProtectedRoute({ children }) {
     if (isLoggedIn) {
       hasShownToast.current = false
     }
-  }, [loading, isLoggedIn]) // Removed toast from dependencies to prevent infinite loop
+  }, [loading, isLoggedIn, justLoggedOut]) // Added justLoggedOut to dependencies
 
   // Show loading spinner while checking authentication
   if (loading) {
@@ -37,8 +37,13 @@ function ProtectedRoute({ children }) {
     )
   }
 
-  // If not logged in, redirect to login with the current location
+  // If not logged in, redirect based on whether this was a logout or unauthorized access
   if (!isLoggedIn) {
+    // If user just logged out, redirect to home page
+    if (justLoggedOut) {
+      return <Navigate to="/" replace />
+    }
+    // Otherwise, redirect to login with the current location for unauthorized access
     return <Navigate to="/login" state={{ from: location }} replace />
   }
 

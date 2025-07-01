@@ -78,7 +78,8 @@ function Header() {
       removeToast(loadingToastId)
       toast.logoutSuccess(userName)
       
-      navigate('/') // Redirect to home after logout
+      // Don't navigate here - let ProtectedRoute handle the redirect
+      
     } catch (error) {
       console.error('Logout error:', error)
       
@@ -88,6 +89,7 @@ function Header() {
       }
       
       toast.logoutError()
+      // Only navigate on error, to ensure user gets to a safe state
       navigate('/')
     } finally {
       setIsLoggingOut(false)
