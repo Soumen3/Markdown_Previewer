@@ -1,80 +1,82 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTheme } from '../hooks/useTheme'
+import { useAuth } from '../contexts/AuthContext'
+import { useToast } from '../hooks/useToast'
+import { databases, ID, Query } from '../lib/appwrite'
 import Header from '../components/Header'
 
 function Dashboard() {
   const { isDark } = useTheme()
   const navigate = useNavigate()
+  const { user } = useAuth()
+  const { toast } = useToast()
   const [markdownFiles, setMarkdownFiles] = useState([])
   const [isLoading, setIsLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
-  const [sortBy, setSortBy] = useState('lastModified') // 'name', 'created', 'lastModified', 'size'
+  const [sortBy, setSortBy] = useState('lastModified') // 'title', 'createdAt', 'lastModified'
   const [sortOrder, setSortOrder] = useState('desc') // 'asc', 'desc'
 
-  // Mock data - In a real app, this would come from an API or local storage
-  const mockFiles = [
-    {
-      id: 1,
-      name: 'Project README.md',
-      path: '/projects/myapp/README.md',
-      size: 2048,
-      created: new Date('2024-06-15T10:30:00'),
-      lastModified: new Date('2024-06-30T14:45:00'),
-      preview: 'A comprehensive guide to setting up and running the project...',
-      tags: ['documentation', 'project']
-    },
-    {
-      id: 2,
-      name: 'API Documentation.md',
-      path: '/docs/api/documentation.md',
-      size: 5120,
-      created: new Date('2024-06-20T09:15:00'),
-      lastModified: new Date('2024-06-29T16:20:00'),
-      preview: 'Complete API reference with endpoints, authentication...',
-      tags: ['api', 'documentation']
-    },
-    {
-      id: 3,
-      name: 'Meeting Notes.md',
-      path: '/notes/meetings/2024-06-28.md',
-      size: 1536,
-      created: new Date('2024-06-28T11:00:00'),
-      lastModified: new Date('2024-06-28T11:30:00'),
-      preview: 'Weekly team meeting notes covering project updates...',
-      tags: ['meeting', 'notes']
-    },
-    {
-      id: 4,
-      name: 'Tutorial Guide.md',
-      path: '/tutorials/getting-started.md',
-      size: 3072,
-      created: new Date('2024-06-25T13:20:00'),
-      lastModified: new Date('2024-06-27T10:15:00'),
-      preview: 'Step-by-step tutorial for beginners to get started...',
-      tags: ['tutorial', 'guide']
-    },
-    {
-      id: 5,
-      name: 'Changelog.md',
-      path: '/changelog.md',
-      size: 4096,
-      created: new Date('2024-06-10T08:00:00'),
-      lastModified: new Date('2024-06-26T17:30:00'),
-      preview: 'Version history and release notes for the application...',
-      tags: ['changelog', 'releases']
+  // Fetch files from Appwrite database
+  const fetchMarkdownFiles = async () => {
+    if (!user || !user.$id) {
+      setIsLoading(false)
+      return
     }
-  ]
 
-  useEffect(() => {
-    // Simulate loading data
-    const loadFiles = async () => {
+    try {
       setIsLoading(true)
-      await new Promise(resolve => setTimeout(resolve, 1000)) // Simulate API call
-      setMarkdownFiles(mockFiles)
+      
+      // Query documents for the current user
+      const response = await databases.listDocuments(
+        import.meta.env.VITE_APPWRITE_DATABASE_ID,
+        import.meta.env.VITE_APPWRITE_MARKDOWN_COLLECTION_ID,
+        [
+          Query.equal('userId', user.$id)
+        ]
+      )
+      console.log('Fetched markdown files:', response.documents)
+
+
+      // Transform Appwrite documents to match our UI format
+      const transformedFiles = response.documents.map(doc => ({
+        id: doc.$id,
+        name: doc.title + '.md',
+        title: doc.title,
+        content: doc.content,
+        size: new Blob([doc.content]).size, // Calculate size from content
+        created: new Date(doc.createdAt),
+        lastModified: new Date(doc.updatedAt),
+        preview: doc.content.substring(0, 100) + (doc.content.length > 100 ? '...' : ''),
+        tags: [] // You can add tags functionality later
+      }))
+
+      setMarkdownFiles(transformedFiles)
+    } catch (error) {
+      console.error('Failed to fetch markdown files:', error)
+      toast.error('Failed to load your files: ' + (error.message || 'Unknown error'))
+      setMarkdownFiles([])
+    } finally {
       setIsLoading(false)
     }
-    loadFiles()
+  }
+
+  useEffect(() => {
+    fetchMarkdownFiles()
+  }, [user])
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (event) => {
+      // Ctrl+N or Cmd+N for new file
+      if ((event.ctrlKey || event.metaKey) && event.key === 'n') {
+        event.preventDefault()
+        handleNewFile()
+      }
+    }
+
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
   }, [])
 
   const formatFileSize = (bytes) => {
@@ -99,15 +101,15 @@ function Dashboard() {
     .filter(file => 
       file.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       file.preview.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      file.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()))
+      file.title.toLowerCase().includes(searchTerm.toLowerCase())
     )
     .sort((a, b) => {
       let aValue, bValue
       
       switch (sortBy) {
-        case 'name':
-          aValue = a.name.toLowerCase()
-          bValue = b.name.toLowerCase()
+        case 'title':
+          aValue = a.title.toLowerCase()
+          bValue = b.title.toLowerCase()
           break
         case 'created':
           aValue = a.created
@@ -136,6 +138,62 @@ function Dashboard() {
     // Navigate to the markdown editor with the file ID
     console.log('Opening file:', file.name)
     navigate(`/editor/${file.id}`)
+  }
+
+  const handleDeleteFile = async (fileId, fileName, event) => {
+    // Prevent triggering the file click event
+    event.stopPropagation()
+    
+    if (!confirm(`Are you sure you want to delete "${fileName}"? This action cannot be undone.`)) {
+      return
+    }
+
+    try {
+      await databases.deleteDocument(
+        import.meta.env.VITE_APPWRITE_DATABASE_ID,
+        import.meta.env.VITE_APPWRITE_MARKDOWN_COLLECTION_ID,
+        fileId
+      )
+      
+      toast.success(`"${fileName}" has been deleted successfully`)
+      
+      // Refresh the files list
+      fetchMarkdownFiles()
+    } catch (error) {
+      console.error('Failed to delete file:', error)
+      toast.error(`Failed to delete "${fileName}": ` + (error.message || 'Unknown error'))
+    }
+  }
+
+  const handleDuplicateFile = async (file, event) => {
+    // Prevent triggering the file click event
+    event.stopPropagation()
+    
+    try {
+      const now = new Date().toISOString()
+      const duplicateTitle = `${file.title} (Copy)`
+      
+      await databases.createDocument(
+        import.meta.env.VITE_APPWRITE_DATABASE_ID,
+        import.meta.env.VITE_APPWRITE_MARKDOWN_COLLECTION_ID,
+        ID.unique(),
+        {
+          title: duplicateTitle,
+          content: file.content,
+          createdAt: now,
+          updatedAt: now,
+          userId: user.$id
+        }
+      )
+      
+      toast.success(`"${duplicateTitle}" has been created successfully`)
+      
+      // Refresh the files list
+      fetchMarkdownFiles()
+    } catch (error) {
+      console.error('Failed to duplicate file:', error)
+      toast.error(`Failed to duplicate "${file.name}": ` + (error.message || 'Unknown error'))
+    }
   }
 
   const handleNewFile = () => {
@@ -180,6 +238,7 @@ function Dashboard() {
             </div>
             <button
               onClick={handleNewFile}
+              title="Create new file (Ctrl+N)"
               className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200 transform hover:scale-105"
             >
               <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -217,7 +276,7 @@ function Dashboard() {
               className="block w-full pl-3 pr-10 py-2 text-base border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
             >
               <option value="lastModified">Last Modified</option>
-              <option value="name">Name</option>
+              <option value="title">Name</option>
               <option value="created">Created</option>
               <option value="size">Size</option>
             </select>
@@ -252,6 +311,7 @@ function Dashboard() {
               <div className="mt-6">
                 <button
                   onClick={handleNewFile}
+                  title="Create new file (Ctrl+N)"
                   className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                 >
                   <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -263,7 +323,7 @@ function Dashboard() {
             )}
           </div>
         ) : (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {filteredAndSortedFiles.map((file) => (
               <div
                 key={file.id}
@@ -279,11 +339,26 @@ function Dashboard() {
                       {file.name}
                     </h3>
                   </div>
-                  <button className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700">
-                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
-                    </svg>
-                  </button>
+                  <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button 
+                      onClick={(e) => handleDuplicateFile(file, e)}
+                      className="p-1 rounded hover:bg-blue-100 dark:hover:bg-blue-900 text-blue-500 hover:text-blue-700 dark:hover:text-blue-300"
+                      title="Duplicate file"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                      </svg>
+                    </button>
+                    <button 
+                      onClick={(e) => handleDeleteFile(file.id, file.name, e)}
+                      className="p-1 rounded hover:bg-red-100 dark:hover:bg-red-900 text-red-500 hover:text-red-700 dark:hover:text-red-300"
+                      title="Delete file"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                    </button>
+                  </div>
                 </div>
                 
                 <p className="text-sm text-gray-600 dark:text-gray-400 mb-4 line-clamp-2">
@@ -311,8 +386,8 @@ function Dashboard() {
                     <span>{formatFileSize(file.size)}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span>Path:</span>
-                    <span className="truncate ml-2" title={file.path}>{file.path}</span>
+                    <span>Created:</span>
+                    <span>{formatDate(file.created)}</span>
                   </div>
                 </div>
               </div>

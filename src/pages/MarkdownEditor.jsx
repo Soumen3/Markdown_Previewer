@@ -4,12 +4,15 @@ import { marked } from 'marked'
 import DOMPurify from 'dompurify'
 import { useTheme } from '../hooks/useTheme'
 import { useToast } from '../hooks/useToast'
+import { useAuth } from '../contexts/AuthContext'
+import { databases, ID } from '../lib/appwrite'
 import Header from '../components/Header'
 
 const MarkdownEditor = () => {
   const { isDark } = useTheme()
   const navigate = useNavigate()
   const { toast } = useToast()
+  const { user } = useAuth()
   const { fileId } = useParams()
   const textareaRef = useRef(null)
   
@@ -148,14 +151,45 @@ You can write inline math like \`E = mc²\` or display math:
 
   useEffect(() => {
     // Load existing file or set sample content
-    if (fileId && fileId !== 'new') {
-      // In a real app, load file content from API
-      setFileName(`Document-${fileId}.md`)
-      setMarkdownText(sampleMarkdown)
-    } else {
-      setMarkdownText(sampleMarkdown)
+    const loadDocument = async () => {
+      if (fileId && fileId !== 'new') {
+        if (!user || !user.$id) {
+          toast.error('You must be logged in to access documents')
+          navigate('/login')
+          return
+        }
+
+        try {
+          // Load from Appwrite database
+          const document = await databases.getDocument(
+            import.meta.env.VITE_APPWRITE_DATABASE_ID,
+            import.meta.env.VITE_APPWRITE_MARKDOWN_COLLECTION_ID,
+            fileId
+          )
+          
+          // Check if the document belongs to the current user
+          if (document.userId !== user.$id) {
+            toast.error('You do not have permission to access this document')
+            navigate('/dashboard')
+            return
+          }
+          
+          setFileName(document.title + '.md')
+          setMarkdownText(document.content || '')
+        } catch (error) {
+          console.error('Failed to load document:', error)
+          toast.error('Failed to load document: ' + (error.message || 'Unknown error'))
+          
+          // Fallback to sample content
+          setMarkdownText(sampleMarkdown)
+        }
+      } else {
+        setMarkdownText(sampleMarkdown)
+      }
     }
-  }, [fileId])
+    
+    loadDocument()
+  }, [fileId, user, toast, navigate])
 
   // Auto-save functionality
   useEffect(() => {
@@ -273,27 +307,78 @@ You can write inline math like \`E = mc²\` or display math:
     }
   }
 
-  // Save/Load functionality using localStorage and toast notifications
+  // Save/Load functionality using Appwrite database and toast notifications
   const handleSave = async () => {
+    if (!user || !user.$id) {
+      toast.error('You must be logged in to save documents')
+      return
+    }
+
     setIsSaving(true)
     try {
-      // Save to localStorage for demo purposes
+      const documentData = {
+        title: fileName.replace('.md', ''),
+        content: markdownText,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        userId: user.$id
+      }
+
+      if (fileId && fileId !== 'new') {
+        // Update existing document
+        await databases.updateDocument(
+          import.meta.env.VITE_APPWRITE_DATABASE_ID,
+          import.meta.env.VITE_APPWRITE_MARKDOWN_COLLECTION_ID,
+          fileId,
+          {
+            title: documentData.title,
+            content: documentData.content,
+            updatedAt: documentData.updatedAt
+            // Note: userId should not be updated for existing documents
+          }
+        )
+        toast.fileSaved(fileName)
+      } else {
+        // Create new document
+        console.log('Creating new document:', documentData)
+        const response = await databases.createDocument(
+          import.meta.env.VITE_APPWRITE_DATABASE_ID,
+          import.meta.env.VITE_APPWRITE_MARKDOWN_COLLECTION_ID,
+          ID.unique(),
+          documentData
+        )
+        
+        // Update the URL to include the new document ID
+        navigate(`/editor/${response.$id}`, { replace: true })
+        toast.fileSaved(fileName)
+      }
+      
+      // Also save to localStorage as backup
       localStorage.setItem('markdownContent', markdownText)
       localStorage.setItem('markdownFileName', fileName)
       
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 500))
       setLastSaved(new Date())
-      toast.fileSaved(fileName)
     } catch (error) {
-      toast.error('Failed to save file')
+      console.error('Save failed:', error)
+      toast.error('Failed to save file: ' + (error.message || 'Unknown error'))
+      
+      // Fallback to localStorage if database save fails
+      try {
+        localStorage.setItem('markdownContent', markdownText)
+        localStorage.setItem('markdownFileName', fileName)
+        setLastSaved(new Date())
+        toast.info('Saved to local storage as backup')
+      } catch (localError) {
+        toast.error('Failed to save file completely')
+      }
     } finally {
       setIsSaving(false)
     }
   }
 
-  const handleLoad = () => {
+  const handleLoad = async () => {
     try {
+      // First try to load from localStorage as fallback
       const savedContent = localStorage.getItem('markdownContent')
       const savedFileName = localStorage.getItem('markdownFileName')
       
@@ -302,11 +387,12 @@ You can write inline math like \`E = mc²\` or display math:
         if (savedFileName) {
           setFileName(savedFileName)
         }
-        toast.success('Content loaded successfully!')
+        toast.success('Content loaded from local storage!')
       } else {
-        toast.info('No saved content found!')
+        toast.info('No local backup found!')
       }
     } catch (error) {
+      console.error('Load failed:', error)
       toast.error('Failed to load content')
     }
   }
@@ -450,8 +536,9 @@ You can write inline math like \`E = mc²\` or display math:
               {/* Save Button */}
               <button
                 onClick={handleSave}
-                disabled={isSaving}
+                disabled={isSaving || !user}
                 className="inline-flex items-center px-2 sm:px-3 lg:px-4 py-1 sm:py-2 border border-transparent text-xs sm:text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex-shrink-0"
+                title={!user ? 'You must be logged in to save' : 'Save document'}
               >
                 {isSaving ? (
                   <>
