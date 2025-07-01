@@ -3,7 +3,11 @@ import { useNavigate } from 'react-router-dom'
 import { useTheme } from '../hooks/useTheme'
 import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '../hooks/useToast'
-import { databases, ID, Query } from '../lib/appwrite'
+import { 
+  getUserMarkdownDocuments, 
+  deleteMarkdownDocument, 
+  duplicateMarkdownDocument 
+} from '../services/appwriteService'
 import Header from '../components/Header'
 
 function Dashboard() {
@@ -27,19 +31,12 @@ function Dashboard() {
     try {
       setIsLoading(true)
       
-      // Query documents for the current user
-      const response = await databases.listDocuments(
-        import.meta.env.VITE_APPWRITE_DATABASE_ID,
-        import.meta.env.VITE_APPWRITE_MARKDOWN_COLLECTION_ID,
-        [
-          Query.equal('userId', user.$id)
-        ]
-      )
-      console.log('Fetched markdown files:', response.documents)
-
+      // Get documents for the current user using the service
+      const documents = await getUserMarkdownDocuments(user.$id)
+      console.log('Fetched markdown files:', documents)
 
       // Transform Appwrite documents to match our UI format
-      const transformedFiles = response.documents.map(doc => ({
+      const transformedFiles = documents.map(doc => ({
         id: doc.$id,
         name: doc.title + '.md',
         title: doc.title,
@@ -149,11 +146,7 @@ function Dashboard() {
     }
 
     try {
-      await databases.deleteDocument(
-        import.meta.env.VITE_APPWRITE_DATABASE_ID,
-        import.meta.env.VITE_APPWRITE_MARKDOWN_COLLECTION_ID,
-        fileId
-      )
+      await deleteMarkdownDocument(fileId)
       
       toast.success(`"${fileName}" has been deleted successfully`)
       
@@ -170,21 +163,9 @@ function Dashboard() {
     event.stopPropagation()
     
     try {
-      const now = new Date().toISOString()
       const duplicateTitle = `${file.title} (Copy)`
       
-      await databases.createDocument(
-        import.meta.env.VITE_APPWRITE_DATABASE_ID,
-        import.meta.env.VITE_APPWRITE_MARKDOWN_COLLECTION_ID,
-        ID.unique(),
-        {
-          title: duplicateTitle,
-          content: file.content,
-          createdAt: now,
-          updatedAt: now,
-          userId: user.$id
-        }
-      )
+      await duplicateMarkdownDocument(file.id, user.$id, duplicateTitle)
       
       toast.success(`"${duplicateTitle}" has been created successfully`)
       

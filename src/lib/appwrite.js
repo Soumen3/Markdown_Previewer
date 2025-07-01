@@ -1,10 +1,19 @@
 import { Client, Account, Databases } from 'appwrite';
+import { endpoint, projectId, validateConfig } from '../config/appwrite.config.js';
+
+// Validate configuration before initializing client
+try {
+  validateConfig();
+} catch (error) {
+  console.error('Appwrite configuration error:', error.message);
+  throw error;
+}
 
 export const client = new Client();
 
 client
-    .setEndpoint(import.meta.env.VITE_APPWRITE_ENDPOINT) // Replace with your Appwrite endpoint
-    .setProject(import.meta.env.VITE_APPWRITE_PROJECT_ID); // Replace with your project ID
+    .setEndpoint(endpoint) // Using endpoint from config file
+    .setProject(projectId); // Using project ID from config file
 
 export const account = new Account(client);
 export const databases = new Databases(client);
