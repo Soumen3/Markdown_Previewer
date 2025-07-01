@@ -83,7 +83,7 @@
   border-radius: 0.25rem;
   font-size: 0.875rem;
   font-family: ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", Menlo, monospace;
-  color: #db2777;
+  color: #059669;
 }
 
 .prose pre {
@@ -165,7 +165,7 @@
 
 .dark .prose code {
   background-color: #1f2937;
-  color: #f472b6;
+  color: #10b981;
 }
 
 .dark .prose pre {
