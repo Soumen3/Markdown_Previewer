@@ -1,6 +1,15 @@
 import React from 'react'
 
-const EditorToolbar = ({ insertMarkdown, handleLoad }) => {
+const EditorToolbar = ({ insertMarkdown, handleLoad, markdownText, toast }) => {
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(markdownText)
+      toast?.success('Content copied to clipboard!')
+    } catch (error) {
+      console.error('Failed to copy to clipboard:', error)
+      toast?.error('Failed to copy to clipboard')
+    }
+  }
   return (
     <div className="bg-gray-100 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
       <div className="max-w-none mx-auto px-3 sm:px-4 md:px-6 lg:px-8 xl:px-12">
@@ -74,6 +83,18 @@ const EditorToolbar = ({ insertMarkdown, handleLoad }) => {
           
           {/* Separator */}
           <div className="w-px h-4 sm:h-6 bg-gray-300 dark:bg-gray-600 flex-shrink-0"></div>
+          
+          {/* Copy Button */}
+          <button
+            onClick={handleCopy}
+            className="flex items-center px-2 sm:px-3 py-1 text-xs sm:text-sm bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex-shrink-0"
+            title="Copy content to clipboard"
+          >
+            <svg className="w-3 h-3 sm:w-4 sm:h-4 sm:mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+            </svg>
+            <span className="hidden sm:inline">Copy</span>
+          </button>
           
           {/* Load Button */}
           <button

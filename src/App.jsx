@@ -96,14 +96,14 @@ function App() {
                 </ProtectedRoute>
               } 
             />
-            <Route 
+            {/* <Route 
               path="/editor" 
               element={
                 <ProtectedRoute>
                   <MarkdownEditor />
                 </ProtectedRoute>
               } 
-            />
+            /> */}
           </Routes>
           <ToastContainer />
         </Router>
