@@ -1,32 +1,78 @@
 import React, { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { useTheme } from '../hooks/useTheme'
 import { LoginForm } from '../components/forms'
+import { authService } from '../services/auth'
+import { useAuth } from '../contexts/AuthContext'
+import { useToast } from '../hooks/useToast'
 
 function Login() {
   const { isDark } = useTheme()
   const navigate = useNavigate()
+  const location = useLocation()
   const [isLoading, setIsLoading] = useState(false)
+  const { login } = useAuth()
+  const { toast, removeToast } = useToast()
+
+  // Get the intended destination or default to dashboard
+  const from = location.state?.from?.pathname || '/dashboard'
 
   const handleSubmit = async (formData) => {
     setIsLoading(true)
     
-    // Simulate API call
+    let loadingToastId = null
+    
     try {
-      await new Promise(resolve => setTimeout(resolve, 2000))
-      console.log('Login attempt:', formData)
-      // Handle successful login here
-      alert('Login successful!')
+      console.log('Login attempt:', { email: formData.email })
+      
+      // Show loading toast
+      loadingToastId = toast.loginLoading()
+      
+      // Login user with AuthService
+      const { session, user } = await authService.login(formData.email, formData.password)
+      
+      console.log('Login successful:', session)
+      console.log('Current user:', user)
+      
+      // Update auth context
+      await login({ user, session })
+      
+      // Remove loading toast and show success
+      removeToast(loadingToastId)
+      toast.loginSuccess(user.name.split(' ')[0])
+      
+      navigate(from, { replace: true }) // Redirect to intended destination after successful login
+      
     } catch (error) {
       console.error('Login error:', error)
+      
+      // Remove loading toast before showing error
+      if (loadingToastId) {
+        removeToast(loadingToastId)
+      }
+      
+      toast.loginError(error.message)
     } finally {
       setIsLoading(false)
     }
   }
 
-  const handleGoogleLogin = () => {
-    // Handle Google login
-    console.log('Google login initiated')
+  const handleGoogleLogin = async () => {
+    try {
+      toast.googleRedirect('signin')
+      
+      // Get the intended destination and encode it in the success URL
+      const successUrl = `${window.location.origin}${from}`
+      
+      // Initiate Google OAuth with AuthService
+      await authService.loginWithGoogle(
+        successUrl, // Success redirect to intended destination
+        `${window.location.origin}/login` // Failure redirect
+      )
+    } catch (error) {
+      console.error('Google login error:', error)
+      toast.loginError(error.message)
+    }
   }
 
   return (

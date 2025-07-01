@@ -1,33 +1,85 @@
 import React, { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { useTheme } from '../hooks/useTheme'
 import { SignupForm } from '../components/forms'
+import { authService } from '../services/auth'
+import { useAuth } from '../contexts/AuthContext'
+import { useToast } from '../hooks/useToast'
 
 function Signup() {
   const { isDark } = useTheme()
   const navigate = useNavigate()
+  const location = useLocation()
   const [isLoading, setIsLoading] = useState(false)
+  const { login } = useAuth()
+  const { toast, removeToast } = useToast()
+
+  // Get the intended destination or default to dashboard
+  const from = location.state?.from?.pathname || '/dashboard'
 
   const handleSubmit = async (formData) => {
     setIsLoading(true)
     
-    // Simulate API call
+    let loadingToastId = null
+    
     try {
-      await new Promise(resolve => setTimeout(resolve, 2000))
-      console.log('Signup attempt:', formData)
-      // Handle successful signup here
-      alert('Account created successfully!')
-      navigate('/login')
+      // Log the user preferences
+      console.log('User registration data:', {
+        email: formData.email,
+        name: `${formData.firstName} ${formData.lastName}`.trim(),
+        company: formData.company,
+        agreeToTerms: formData.agreeToTerms,
+        subscribeNewsletter: formData.subscribeNewsletter
+      })
+
+      // Show loading toast
+      loadingToastId = toast.signupLoading()
+      
+      // Register user with AuthService
+      const { user, session } = await authService.register(formData)
+      
+      console.log('User created successfully:', user)
+      console.log('User logged in after registration:', session)
+      
+      // Update auth context
+      await login({ user, session })
+      
+      // Remove loading toast and show success
+      removeToast(loadingToastId)
+      toast.signupSuccess(user.name.split(' ')[0])
+      
+      navigate(from, { replace: true }) // Redirect to intended destination after successful signup
+      
     } catch (error) {
       console.error('Signup error:', error)
+      
+      // Remove loading toast before showing error
+      if (loadingToastId) {
+        removeToast(loadingToastId)
+      }
+      
+      toast.signupError(error.message)
     } finally {
       setIsLoading(false)
     }
   }
 
-  const handleGoogleSignup = () => {
-    // Handle Google signup
-    console.log('Google signup initiated')
+  const handleGoogleSignup = async () => {
+    try {
+      toast.googleRedirect('signup')
+      
+      // Get the intended destination and encode it in the success URL
+      const successUrl = `${window.location.origin}${from}`
+      
+      // Initiate Google OAuth with AuthService
+      await authService.loginWithGoogle(
+        successUrl, // Success redirect to intended destination
+        `${window.location.origin}/signup` // Failure redirect
+      )
+    } catch (error) {
+      console.error('Google signup error:', error)
+      toast.signupError(error.message)
+    }
   }
 
   return (

@@ -1,13 +1,22 @@
-import React, { useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
 import { useDispatch } from 'react-redux'
 import { useNavigate } from 'react-router-dom'
 import { setMounted, setTheme } from '../features/theme/themeSlice'
 import { useTheme } from '../hooks/useTheme'
+import { useAuth } from '../contexts/AuthContext'
+import { useToast } from '../hooks/useToast'
 
 function Header() {
   const dispatch = useDispatch()
   const navigate = useNavigate()
   const { isDark, mounted, toggle, isMobileMenuOpen, toggleMobileMenu: toggleMobile, closeMobileMenu } = useTheme()
+  
+  // Use Auth Context
+  const { user, isLoggedIn, loading: authLoading, logout } = useAuth()
+  const { toast, removeToast } = useToast()
+  
+  // Local loading state for logout
+  const [isLoggingOut, setIsLoggingOut] = useState(false)
 
   // Check for saved theme preference or default to light mode
   useEffect(() => {
@@ -50,6 +59,49 @@ function Header() {
     navigate('/login')
   }
 
+  const handleLogout = async () => {
+    if (isLoggingOut) return // Prevent multiple logout attempts
+    
+    setIsLoggingOut(true)
+    let loadingToastId = null
+    
+    try {
+      const userName = user?.name?.split(' ')[0] || 'there'
+      
+      // Show loading toast
+      loadingToastId = toast.logoutLoading()
+      
+      await logout()
+      console.log('User logged out successfully')
+      
+      // Remove loading toast and show success
+      removeToast(loadingToastId)
+      toast.logoutSuccess(userName)
+      
+      navigate('/') // Redirect to home after logout
+    } catch (error) {
+      console.error('Logout error:', error)
+      
+      // Remove loading toast before showing error
+      if (loadingToastId) {
+        removeToast(loadingToastId)
+      }
+      
+      toast.logoutError()
+      navigate('/')
+    } finally {
+      setIsLoggingOut(false)
+    }
+  }
+
+  const handleDashboardClick = () => {
+    navigate('/dashboard')
+  }
+
+  const handleHomeClick = () => {
+    navigate('/')
+  }
+
   // Prevent hydration mismatch
   if (!mounted) {
     return null
@@ -58,16 +110,23 @@ function Header() {
   return (
     <header className="container mx-auto px-6 py-8">
       <nav className="flex items-center justify-between">
-        <div className="flex items-center space-x-2">
-          <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
+        <div className="flex items-center space-x-2 cursor-pointer" onClick={handleHomeClick}>
+          <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg flex items-center justify-center hover:scale-110 transition-transform duration-200">
             <span className="text-white font-bold text-lg">M</span>
           </div>
-          <span className="text-2xl font-bold text-gray-800 dark:text-white hidden md:block">MarkdownPreview</span>
+          <span className="text-2xl font-bold text-gray-800 dark:text-white hidden md:block hover:text-blue-600 dark:hover:text-blue-400 transition-colors duration-200">MarkdownPreview</span>
         </div>
         <div className="hidden md:flex items-center space-x-6">
           <a href="#features" className="text-gray-600 hover:text-blue-600 dark:text-gray-300 dark:hover:text-blue-400 transition-colors">Features</a>
           <a href="#demo" className="text-gray-600 hover:text-blue-600 dark:text-gray-300 dark:hover:text-blue-400 transition-colors">Demo</a>
           <a href="#about" className="text-gray-600 hover:text-blue-600 dark:text-gray-300 dark:hover:text-blue-400 transition-colors">About</a>
+          
+          <button
+            onClick={handleDashboardClick}
+            className="text-gray-600 hover:text-blue-600 dark:text-gray-300 dark:hover:text-blue-400 transition-colors font-medium"
+          >
+            Dashboard
+          </button>
           
           {/* Theme Toggle Button */}
           <button
@@ -88,12 +147,42 @@ function Header() {
             )}
           </button>
           
-          <button 
-            onClick={handleGetStartedClick}
-            className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 transition-colors"
-          >
-            Get Started
-          </button>
+          {/* Auth Button - Show Logout if logged in, Get Started if not */}
+          {!authLoading && (
+            isLoggedIn ? (
+              <div className="flex items-center space-x-3">
+                {user && (
+                  <span className="text-sm text-gray-600 dark:text-gray-300">
+                    Welcome, {user.name.split(' ')[0]}
+                  </span>
+                )}
+                <button 
+                  onClick={handleLogout}
+                  disabled={isLoggingOut}
+                  className="bg-red-600 text-white px-6 py-2 rounded-lg hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+                >
+                  {isLoggingOut ? (
+                    <>
+                      <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      <span>Signing out...</span>
+                    </>
+                  ) : (
+                    <span>Logout</span>
+                  )}
+                </button>
+              </div>
+            ) : (
+              <button 
+                onClick={handleGetStartedClick}
+                className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 transition-colors"
+              >
+                Get Started
+              </button>
+            )
+          )}
         </div>
         
         {/* Mobile Menu Button */}
@@ -163,13 +252,56 @@ function Header() {
             </a>
             <button 
               onClick={() => {
-                handleGetStartedClick()
+                handleDashboardClick()
                 handleMobileMenuClose()
               }}
-              className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 transition-colors text-left font-medium"
+              className="text-gray-600 hover:text-blue-600 dark:text-gray-300 dark:hover:text-blue-400 transition-colors px-2 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-left font-medium"
             >
-              Get Started
+              Dashboard
             </button>
+            
+            {/* Auth Button - Mobile */}
+            {!authLoading && (
+              isLoggedIn ? (
+                <div className="space-y-2">
+                  {user && (
+                    <div className="text-sm text-gray-600 dark:text-gray-300 px-2 py-1">
+                      Welcome, {user.name.split(' ')[0]}
+                    </div>
+                  )}
+                  <button 
+                    onClick={() => {
+                      handleLogout()
+                      handleMobileMenuClose()
+                    }}
+                    disabled={isLoggingOut}
+                    className="w-full bg-red-600 text-white px-6 py-3 rounded-lg hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600 transition-colors text-left font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+                  >
+                    {isLoggingOut ? (
+                      <>
+                        <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        <span>Signing out...</span>
+                      </>
+                    ) : (
+                      <span>Logout</span>
+                    )}
+                  </button>
+                </div>
+              ) : (
+                <button 
+                  onClick={() => {
+                    handleGetStartedClick()
+                    handleMobileMenuClose()
+                  }}
+                  className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 transition-colors text-left font-medium"
+                >
+                  Get Started
+                </button>
+              )
+            )}
           </div>
         </div>
       )}
