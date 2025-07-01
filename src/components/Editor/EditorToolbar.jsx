@@ -1,6 +1,8 @@
-import React from 'react'
+import React, { useRef } from 'react'
 
 const EditorToolbar = ({ insertMarkdown, handleLoad, markdownText, toast }) => {
+  const fileInputRef = useRef(null)
+
   const handleCopy = async () => {
     try {
       await navigator.clipboard.writeText(markdownText)
@@ -9,6 +11,40 @@ const EditorToolbar = ({ insertMarkdown, handleLoad, markdownText, toast }) => {
       console.error('Failed to copy to clipboard:', error)
       toast?.error('Failed to copy to clipboard')
     }
+  }
+
+  const handleFileUpload = () => {
+    fileInputRef.current?.click()
+  }
+
+  const handleFileChange = async (event) => {
+    const file = event.target.files[0]
+    if (!file) return
+
+    // Check if file is a markdown file
+    if (!file.name.endsWith('.md') && !file.name.endsWith('.markdown') && !file.name.endsWith('.txt')) {
+      toast?.error('Please select a markdown file (.md, .markdown, or .txt)')
+      return
+    }
+
+    try {
+      const content = await file.text()
+      
+      // Confirm before replacing content
+      if (markdownText.trim() && !confirm('This will replace your current content with the uploaded file. Continue?')) {
+        return
+      }
+
+      // Call the handleLoad function with the file content and name
+      handleLoad(content, file.name)
+      toast?.success(`File "${file.name}" uploaded successfully!`)
+    } catch (error) {
+      console.error('Failed to read file:', error)
+      toast?.error('Failed to read the file')
+    }
+
+    // Reset file input
+    event.target.value = ''
   }
   return (
     <div className="bg-gray-100 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
@@ -96,17 +132,26 @@ const EditorToolbar = ({ insertMarkdown, handleLoad, markdownText, toast }) => {
             <span className="hidden sm:inline">Copy</span>
           </button>
           
-          {/* Load Button */}
+          {/* Load Button - File Upload */}
           <button
-            onClick={handleLoad}
+            onClick={handleFileUpload}
             className="flex items-center px-2 sm:px-3 py-1 text-xs sm:text-sm bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 rounded border border-green-300 dark:border-green-600 hover:bg-green-200 dark:hover:bg-green-800 transition-colors flex-shrink-0"
-            title="Load backup from localStorage (overwrites current content)"
+            title="Upload markdown file (.md, .markdown, .txt)"
           >
             <svg className="w-3 h-3 sm:w-4 sm:h-4 sm:mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
             </svg>
-            <span className="hidden sm:inline">Load</span>
+            <span className="hidden sm:inline">Upload</span>
           </button>
+          
+          {/* Hidden file input */}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".md,.markdown,.txt"
+            onChange={handleFileChange}
+            style={{ display: 'none' }}
+          />
         </div>
       </div>
     </div>

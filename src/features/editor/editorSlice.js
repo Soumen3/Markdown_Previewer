@@ -106,14 +106,22 @@ export const loadDocument = createAsyncThunk(
   'editor/loadDocument',
   async ({ fileId, userId }, { rejectWithValue }) => {
     try {
+      // Case 1: New document
       if (!fileId || fileId === 'new') {
         return { content: sampleMarkdown, title: 'Untitled', isNew: true }
       }
 
+      // Case 2: Load existing document - requires authentication
+      if (!userId) {
+        return rejectWithValue('Authentication required to access saved documents')
+      }
+
+      // Try to fetch the document from the database
       const document = await getMarkdownDocument(fileId)
       
+      // Check if the document belongs to the current user
       if (document.userId !== userId) {
-        throw new Error('You do not have permission to access this document')
+        return rejectWithValue('You do not have permission to access this document')
       }
       
       return {
@@ -122,7 +130,14 @@ export const loadDocument = createAsyncThunk(
         isNew: false
       }
     } catch (error) {
-      return rejectWithValue(error.message)
+      // Handle different types of errors
+      if (error.code === 404 || error.message.includes('not found')) {
+        return rejectWithValue('Document not found or does not exist')
+      }
+      if (error.code === 401 || error.message.includes('permission')) {
+        return rejectWithValue('You do not have permission to access this document')
+      }
+      return rejectWithValue(error.message || 'Failed to load document')
     }
   }
 )

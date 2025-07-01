@@ -47,6 +47,7 @@ const MarkdownEditor = () => {
   const dispatch = useDispatch()
   const textareaRef = useRef(null)
   const hasLoadedRef = useRef(false)
+  const hasFailedRef = useRef(false) // Track failed attempts to prevent retries
   
   // Redux selectors - Get state from Redux store
   const markdownText = useSelector(selectMarkdownText)
@@ -105,47 +106,86 @@ const MarkdownEditor = () => {
     dispatch(setMarkdownText(event.target.value))
   }
 
-  // Effect to handle errors and show toast notifications
+  // Effect to handle save errors (load errors are handled in the loadDoc function)
+  // This provides more specific error handling and navigation control
   useEffect(() => {
-    if (loadError) {
-      toast.error('Failed to load document: ' + loadError)
-      dispatch(clearErrors())
-    }
     if (saveError) {
       toast.error('Failed to save file: ' + saveError)
       dispatch(clearErrors())
     }
-  }, [loadError, saveError, toast, dispatch])
+  }, [saveError, toast, dispatch])
+
+  // Load document effect - handles initial document loading with specific business logic:
+  // - fileId === "new": Opens a new markdown editor with sample content
+  // - fileId exists: Searches for the document in database under the logged-in user
+  // - Document found: Opens the file
+  // - Document not found or no permission: Returns to dashboard with error message
 
   // Load document effect - handles initial document loading
   useEffect(() => {
     const loadDoc = async () => {
       const currentKey = `${fileId || 'new'}-${user?.$id || 'anonymous'}`
-      if (hasLoadedRef.current === currentKey) {
+      if (hasLoadedRef.current === currentKey || hasFailedRef.current === currentKey) {
         return
       }
       
-      // Check authentication for existing documents
-      if (!user || !user.$id) {
-        if (fileId && fileId !== 'new') {
-          toast.error('You must be logged in to access documents')
-          navigate('/login')
-          return
+      // Case 1: New document - open empty editor with sample content
+      if (fileId === 'new' || !fileId) {
+        try {
+          await dispatch(loadDocument({ 
+            fileId: 'new', 
+            userId: user?.$id || null 
+          })).unwrap()
+          hasLoadedRef.current = currentKey
+        } catch (error) {
+          console.error('Failed to create new document:', error)
+          hasFailedRef.current = currentKey // Prevent retry
         }
+        return
+      }
+      
+      // Case 2: Existing document - must be logged in
+      if (!user || !user.$id) {
+        toast.error('You must be logged in to access saved documents')
+        hasFailedRef.current = currentKey // Prevent retry
+        navigate('/login')
+        return
       }
 
       try {
-        // Dispatch the async thunk to load the document
+        // Try to load the specific document for the logged-in user
         await dispatch(loadDocument({ 
           fileId, 
-          userId: user?.$id 
+          userId: user.$id 
         })).unwrap()
+        
+        // If successful, document was found and loaded
+        hasLoadedRef.current = currentKey
       } catch (error) {
         console.error('Failed to load document:', error)
-        // Error is handled in the slice and shown via useEffect above
+        
+        // Mark as failed to prevent retries
+        hasFailedRef.current = currentKey
+        
+        // Check if it's a permission/not found error
+        if (error.includes('permission') || error.includes('not found') || error.includes('does not exist')) {
+          toast.error('Document not found or you do not have access to it')
+        } else {
+          // Other errors (network, server, etc.)
+          toast.error('Failed to load document: ' + error)
+        }
+        
+        // Navigate to dashboard after showing error
+        setTimeout(() => {
+          navigate('/dashboard')
+        }, 1000) // Small delay to ensure user sees the toast
       }
-      
-      hasLoadedRef.current = currentKey
+    }
+    
+    // Reset refs when fileId or user changes
+    if (hasLoadedRef.current && hasLoadedRef.current !== `${fileId || 'new'}-${user?.$id || 'anonymous'}`) {
+      hasLoadedRef.current = false
+      hasFailedRef.current = false
     }
     
     loadDoc()
@@ -211,25 +251,34 @@ const MarkdownEditor = () => {
     }
   }
 
-  // Load content from localStorage as backup
-  const handleLoad = async () => {
-    if (!confirm('This will replace your current content with data from local storage. Continue?')) {
-      return
-    }
-    
+  // Load content from file upload or localStorage as backup
+  const handleLoad = async (fileContent = null, fileName = null) => {
     try {
-      // Load from localStorage only as a backup/recovery option
-      const savedContent = localStorage.getItem('markdownContent')
-      const savedFileName = localStorage.getItem('markdownFileName')
-      
-      if (savedContent) {
-        dispatch(loadFromLocalStorage({
-          content: savedContent,
-          fileName: savedFileName
-        }))
-        toast.success('Content loaded from local storage!')
+      if (fileContent && fileName) {
+        // File upload case
+        dispatch(setMarkdownText(fileContent))
+        // Extract name without extension for display
+        const nameWithoutExt = fileName.replace(/\.(md|markdown|txt)$/i, '')
+        dispatch(setFileName(nameWithoutExt))
+        // Don't show confirmation toast here - it's shown in the toolbar component
       } else {
-        toast.info('No local backup found!')
+        // LocalStorage backup case
+        if (!confirm('This will replace your current content with data from local storage. Continue?')) {
+          return
+        }
+        
+        const savedContent = localStorage.getItem('markdownContent')
+        const savedFileName = localStorage.getItem('markdownFileName')
+        
+        if (savedContent) {
+          dispatch(loadFromLocalStorage({
+            content: savedContent,
+            fileName: savedFileName
+          }))
+          toast.success('Content loaded from local storage!')
+        } else {
+          toast.info('No local backup found!')
+        }
       }
     } catch (error) {
       console.error('Load failed:', error)
