@@ -133,15 +133,15 @@ function Dashboard() {
     })
 
   const handleFileClick = (file) => {
-    // In a real app, this would navigate to the markdown editor/viewer
+    // Navigate to the markdown editor with the file ID
     console.log('Opening file:', file.name)
-    // navigate(`/editor/${file.id}`)
+    navigate(`/editor/${file.id}`)
   }
 
   const handleNewFile = () => {
-    // In a real app, this would create a new markdown file
+    // Navigate to the markdown editor for a new file
     console.log('Creating new file')
-    // navigate('/editor/new')
+    navigate('/editor/new')
   }
 
   if (isLoading) {

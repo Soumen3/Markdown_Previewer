@@ -4,6 +4,7 @@ import Home from './pages/Home'
 import Login from './pages/Login'
 import Signup from './pages/Signup'
 import Dashboard from './pages/Dashboard'
+import MarkdownEditor from './pages/MarkdownEditor'
 import ProtectedRoute from './components/ProtectedRoute'
 import PublicRoute from './components/PublicRoute'
 import { client } from './lib/appwrite'
@@ -84,6 +85,22 @@ function App() {
               element={
                 <ProtectedRoute>
                   <Dashboard />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/editor/:fileId" 
+              element={
+                <ProtectedRoute>
+                  <MarkdownEditor />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/editor" 
+              element={
+                <ProtectedRoute>
+                  <MarkdownEditor />
                 </ProtectedRoute>
               } 
             />
