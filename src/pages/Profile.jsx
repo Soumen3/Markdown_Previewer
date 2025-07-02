@@ -76,13 +76,13 @@ const Profile = () => {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
         <Header />
-        <div className="container mx-auto px-6 py-12 text-center">
-          <h1 className="text-2xl font-bold text-gray-800 dark:text-white mb-4">
+        <div className="container mx-auto px-4 sm:px-6 py-8 sm:py-12 text-center">
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-800 dark:text-white mb-4">
             Please log in to view your profile
           </h1>
           <button
             onClick={() => navigate('/login')}
-            className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+            className="w-full sm:w-auto bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
           >
             Go to Login
           </button>
@@ -95,20 +95,20 @@ const Profile = () => {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <Header />
       
-      <div className="container mx-auto px-6 py-12 max-w-2xl">
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8">
+      <div className="container mx-auto px-4 sm:px-6 py-8 sm:py-12 max-w-2xl">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4 sm:p-8">
           {/* Profile Header */}
-          <div className="flex items-center space-x-4 mb-8">
-            <div className="w-16 h-16 bg-gradient-to-r from-green-500 to-blue-500 rounded-full flex items-center justify-center">
+          <div className="flex flex-col sm:flex-row items-center sm:items-start space-y-4 sm:space-y-0 sm:space-x-4 mb-6 sm:mb-8">
+            <div className="w-16 h-16 bg-gradient-to-r from-green-500 to-blue-500 rounded-full flex items-center justify-center flex-shrink-0">
               <span className="text-white font-bold text-2xl">
                 {user.name.charAt(0).toUpperCase()}
               </span>
             </div>
-            <div>
-              <h1 className="text-3xl font-bold text-gray-800 dark:text-white">
+            <div className="text-center sm:text-left">
+              <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 dark:text-white">
                 {user.name}
               </h1>
-              <p className="text-gray-600 dark:text-gray-300">
+              <p className="text-gray-600 dark:text-gray-300 text-sm sm:text-base">
                 Member since {new Date(user.$createdAt).toLocaleDateString()}
               </p>
             </div>
@@ -149,30 +149,30 @@ const Profile = () => {
             </div>
 
             {/* Action Buttons */}
-            <div className="flex items-center justify-between pt-6 border-t border-gray-200 dark:border-gray-600">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pt-6 border-t border-gray-200 dark:border-gray-600">
               {!isEditing ? (
-                <div className="flex space-x-4">
+                <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 w-full sm:w-auto">
                   <button
                     type="button"
                     onClick={() => setIsEditing(true)}
-                    className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                    className="w-full sm:w-auto bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors text-center"
                   >
                     Edit Profile
                   </button>
                   <button
                     type="button"
                     onClick={() => navigate('/dashboard')}
-                    className="bg-gray-600 text-white px-6 py-2 rounded-lg hover:bg-gray-700 transition-colors"
+                    className="w-full sm:w-auto bg-gray-600 text-white px-6 py-2 rounded-lg hover:bg-gray-700 transition-colors text-center"
                   >
                     Back to Dashboard
                   </button>
                 </div>
               ) : (
-                <div className="flex space-x-4">
+                <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 w-full sm:w-auto">
                   <button
                     type="submit"
                     disabled={isUpdating}
-                    className="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+                    className="w-full sm:w-auto bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
                   >
                     {isUpdating ? (
                       <>
@@ -189,7 +189,7 @@ const Profile = () => {
                   <button
                     type="button"
                     onClick={handleCancel}
-                    className="bg-gray-600 text-white px-6 py-2 rounded-lg hover:bg-gray-700 transition-colors"
+                    className="w-full sm:w-auto bg-gray-600 text-white px-6 py-2 rounded-lg hover:bg-gray-700 transition-colors text-center"
                   >
                     Cancel
                   </button>
@@ -201,7 +201,7 @@ const Profile = () => {
                 type="button"
                 onClick={handleDeleteAccount}
                 disabled={isDeleting}
-                className="bg-red-600 text-white px-6 py-2 rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+                className="w-full sm:w-auto bg-red-600 text-white px-6 py-2 rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
               >
                 {isDeleting ? (
                   <>
