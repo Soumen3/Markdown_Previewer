@@ -156,6 +156,39 @@ export class AuthService {
     }
   }
 
+  async updateProfile(userData) {
+    try {
+      const updates = []
+      
+      // Update name if provided
+      if (userData.name) {
+        updates.push(account.updateName(userData.name))
+      }
+      
+      // Update email if provided
+      if (userData.email) {
+        updates.push(account.updateEmail(userData.email, userData.password || ''))
+      }
+      
+      // Execute all updates
+      await Promise.all(updates)
+      
+      // Return updated user data
+      return await account.get()
+    } catch (error) {
+      throw this.handleAuthError(error)
+    }
+  }
+
+  async deleteAccount() {
+    try {
+      // Delete the current user account
+      await account.delete()
+    } catch (error) {
+      throw this.handleAuthError(error)
+    }
+  }
+
 
   handleAuthError(error) {
     let message = 'An unexpected error occurred. Please try again.'

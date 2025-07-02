@@ -104,6 +104,10 @@ function Header() {
     navigate('/')
   }
 
+  const handleProfileClick = () => {
+    navigate('/profile')
+  }
+
   // Prevent hydration mismatch
   if (!mounted) {
     return null
@@ -154,9 +158,21 @@ function Header() {
             isLoggedIn ? (
               <div className="flex items-center space-x-3">
                 {user && (
-                  <span className="text-sm text-gray-600 dark:text-gray-300">
-                    Welcome, {user.name.split(' ')[0]}
-                  </span>
+                  <div className="flex items-center space-x-2">
+                    {/* Profile Icon */}
+                    <button
+                      onClick={handleProfileClick}
+                      className="w-8 h-8 bg-gradient-to-r from-green-500 to-blue-500 rounded-full flex items-center justify-center hover:scale-110 transition-transform duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                      title="View Profile"
+                    >
+                      <span className="text-white font-semibold text-sm">
+                        {user.name.charAt(0).toUpperCase()}
+                      </span>
+                    </button>
+                    <span className="text-sm text-gray-600 dark:text-gray-300">
+                      Welcome, {user.name.split(' ')[0]}
+                    </span>
+                  </div>
                 )}
                 <button 
                   onClick={handleLogout}
@@ -267,8 +283,23 @@ function Header() {
               isLoggedIn ? (
                 <div className="space-y-2">
                   {user && (
-                    <div className="text-sm text-gray-600 dark:text-gray-300 px-2 py-1">
-                      Welcome, {user.name.split(' ')[0]}
+                    <div className="flex items-center space-x-2 px-2 py-1">
+                      {/* Profile Icon - Mobile */}
+                      <button
+                        onClick={() => {
+                          handleProfileClick()
+                          handleMobileMenuClose()
+                        }}
+                        className="w-8 h-8 bg-gradient-to-r from-green-500 to-blue-500 rounded-full flex items-center justify-center hover:scale-110 transition-transform duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        title="View Profile"
+                      >
+                        <span className="text-white font-semibold text-sm">
+                          {user.name.charAt(0).toUpperCase()}
+                        </span>
+                      </button>
+                      <div className="text-sm text-gray-600 dark:text-gray-300">
+                        Welcome, {user.name.split(' ')[0]}
+                      </div>
                     </div>
                   )}
                   <button 

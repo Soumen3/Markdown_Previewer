@@ -68,6 +68,30 @@ export const AuthProvider = ({ children }) => {
     }
   }
 
+  const updateProfile = async (userData) => {
+    try {
+      const updatedUser = await authService.updateProfile(userData)
+      setUser(updatedUser)
+      console.log('Auth context: User profile updated')
+      return updatedUser
+    } catch (error) {
+      console.error('Update profile error in context:', error)
+      throw error
+    }
+  }
+
+  const deleteAccount = async () => {
+    try {
+      await authService.deleteAccount()
+      setUser(null)
+      setIsLoggedIn(false)
+      console.log('Auth context: User account deleted')
+    } catch (error) {
+      console.error('Delete account error in context:', error)
+      throw error
+    }
+  }
+
   useEffect(() => {
     refreshAuth()
   }, [])
@@ -79,6 +103,8 @@ export const AuthProvider = ({ children }) => {
     justLoggedOut,
     login,
     logout,
+    updateProfile,
+    deleteAccount,
     refreshAuth
   }
 
