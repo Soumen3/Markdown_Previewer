@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 
-function LoginForm({ onSubmit, onGoogleLogin, onGitHubLogin, isLoading }) {
+function LoginForm({ onSubmit, onGoogleLogin, onGitHubLogin, onForgotPassword, isLoading }) {
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -151,9 +151,13 @@ function LoginForm({ onSubmit, onGoogleLogin, onGitHubLogin, isLoading }) {
           </div>
 
           <div className="text-sm">
-            <a href="#" className="font-medium text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300 transition-all duration-200 hover:underline hover:scale-105 inline-block">
+            <button
+              type="button"
+              onClick={onForgotPassword}
+              className="font-medium text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300 transition-all duration-200 hover:underline hover:scale-105 inline-block"
+            >
               Forgot your password?
-            </a>
+            </button>
           </div>
         </div>
 

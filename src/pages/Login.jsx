@@ -93,6 +93,10 @@ function Login() {
     }
   }
 
+  const handleForgotPassword = () => {
+    navigate('/forgot-password')
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col justify-center py-6 px-4 sm:py-12 sm:px-6 lg:px-8 animate-in fade-in duration-500">
       <div className="sm:mx-auto sm:w-full sm:max-w-md animate-in slide-in-from-top duration-700 delay-200">
@@ -132,6 +136,7 @@ function Login() {
           onSubmit={handleSubmit}
           onGoogleLogin={handleGoogleLogin}
           onGitHubLogin={handleGitHubLogin}
+          onForgotPassword={handleForgotPassword}
           isLoading={isLoading}
         />
 
