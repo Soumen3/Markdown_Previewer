@@ -46,6 +46,35 @@ const EditorToolbar = ({ insertMarkdown, handleLoad, markdownText, toast }) => {
     // Reset file input
     event.target.value = ''
   }
+
+  const handleDownload = () => {
+    try {
+      if (!markdownText.trim()) {
+        toast?.error('No content to download')
+        return
+      }
+
+      const blob = new Blob([markdownText], { type: 'text/markdown' })
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      
+      // Generate filename with current date/time
+      const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-')
+      const filename = `markdown-document-${timestamp}.md`
+      
+      link.href = url
+      link.download = filename
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      URL.revokeObjectURL(url)
+      
+      toast?.success(`File "${filename}" downloaded successfully!`)
+    } catch (error) {
+      console.error('Failed to download file:', error)
+      toast?.error('Failed to download the file')
+    }
+  }
   return (
     <div className="bg-gray-100 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
       <div className="max-w-none mx-auto px-3 sm:px-4 md:px-6 lg:px-8 xl:px-12">
@@ -130,6 +159,18 @@ const EditorToolbar = ({ insertMarkdown, handleLoad, markdownText, toast }) => {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
             </svg>
             <span className="hidden sm:inline">Copy</span>
+          </button>
+          
+          {/* Download Button */}
+          <button
+            onClick={handleDownload}
+            className="flex items-center px-2 sm:px-3 py-1 text-xs sm:text-sm bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded border border-blue-300 dark:border-blue-600 hover:bg-blue-200 dark:hover:bg-blue-800 transition-colors flex-shrink-0"
+            title="Download as markdown file (.md)"
+          >
+            <svg className="w-3 h-3 sm:w-4 sm:h-4 sm:mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            <span className="hidden sm:inline">Download</span>
           </button>
           
           {/* Load Button - File Upload */}
