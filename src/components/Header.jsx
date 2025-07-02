@@ -181,9 +181,13 @@ function Header() {
                         {user.name.charAt(0).toUpperCase()}
                       </span>
                     </button>
-                    <span className="text-sm text-gray-600 dark:text-gray-300">
+                    <button
+                      onClick={handleProfileClick}
+                      className="text-sm text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors cursor-pointer"
+                      title="View Profile"
+                    >
                       Welcome, {user.name.split(' ')[0]}
-                    </span>
+                    </button>
                   </div>
                 )}
                 <button 
@@ -309,9 +313,16 @@ function Header() {
                           {user.name.charAt(0).toUpperCase()}
                         </span>
                       </button>
-                      <div className="text-sm text-gray-600 dark:text-gray-300">
+                      <button
+                        onClick={() => {
+                          handleProfileClick()
+                          handleMobileMenuClose()
+                        }}
+                        className="text-sm text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors cursor-pointer text-left"
+                        title="View Profile"
+                      >
                         Welcome, {user.name.split(' ')[0]}
-                      </div>
+                      </button>
                     </div>
                   )}
                   <button 
