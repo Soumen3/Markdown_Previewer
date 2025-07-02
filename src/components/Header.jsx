@@ -5,6 +5,7 @@ import { setMounted, setTheme } from '../features/theme/themeSlice'
 import { useTheme } from '../hooks/useTheme'
 import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '../hooks/useToast'
+import Dialog from './Dialog'
 
 function Header() {
   const dispatch = useDispatch()
@@ -17,6 +18,7 @@ function Header() {
   
   // Local loading state for logout
   const [isLoggingOut, setIsLoggingOut] = useState(false)
+  const [showLogoutDialog, setShowLogoutDialog] = useState(false)
 
   // Check for saved theme preference or default to light mode
   useEffect(() => {
@@ -62,6 +64,12 @@ function Header() {
   const handleLogout = async () => {
     if (isLoggingOut) return // Prevent multiple logout attempts
     
+    // Show confirmation dialog
+    setShowLogoutDialog(true)
+  }
+
+  const handleLogoutConfirm = async () => {
+    setShowLogoutDialog(false)
     setIsLoggingOut(true)
     let loadingToastId = null
     
@@ -94,6 +102,10 @@ function Header() {
     } finally {
       setIsLoggingOut(false)
     }
+  }
+
+  const handleLogoutCancel = () => {
+    setShowLogoutDialog(false)
   }
 
   const handleDashboardClick = () => {
@@ -338,6 +350,19 @@ function Header() {
           </div>
         </div>
       )}
+
+      {/* Logout Confirmation Dialog */}
+      <Dialog
+        isOpen={showLogoutDialog}
+        onClose={handleLogoutCancel}
+        onConfirm={handleLogoutConfirm}
+        title="Confirm Logout"
+        message="Are you sure you want to log out? Any unsaved changes in your current editor session may be lost."
+        confirmText="Log Out"
+        cancelText="Cancel"
+        confirmButtonClass="bg-red-600 hover:bg-red-700 text-white"
+        cancelButtonClass="bg-gray-600 hover:bg-gray-700 text-white"
+      />
     </header>
   )
 }
