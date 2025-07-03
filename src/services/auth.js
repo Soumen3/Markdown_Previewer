@@ -35,6 +35,15 @@ export class AuthService {
         userData.password
       )
       
+      // Send email verification
+      try {
+        const verificationUrl = `${window.location.origin}/verify-email`
+        await account.createVerification(verificationUrl)
+      } catch (verificationError) {
+        // Don't fail registration if verification email fails
+        console.warn('Failed to send verification email:', verificationError)
+      }
+      
       // TODO: Store additional user preferences in database
       // - Company information
       // - Newsletter subscription preference
@@ -177,6 +186,46 @@ export class AuthService {
       return await account.get()
     } catch (error) {
       throw this.handleAuthError(error)
+    }
+  }
+
+  /**
+   * Send email verification to the currently logged in user
+   * @param {string} url - Verification URL that user will be redirected to after clicking the verification link
+   * @returns {Promise<void>}
+   */
+  async sendEmailVerification(url) {
+    try {
+      await account.createVerification(url)
+    } catch (error) {
+      throw this.handleAuthError(error)
+    }
+  }
+
+  /**
+   * Complete email verification process
+   * @param {string} userId - User ID from verification link
+   * @param {string} secret - Secret token from verification link
+   * @returns {Promise<void>}
+   */
+  async verifyEmail(userId, secret) {
+    try {
+      await account.updateVerification(userId, secret)
+    } catch (error) {
+      throw this.handleAuthError(error)
+    }
+  }
+
+  /**
+   * Check if current user's email is verified
+   * @returns {Promise<boolean>}
+   */
+  async isEmailVerified() {
+    try {
+      const user = await account.get()
+      return user.emailVerification
+    } catch (error) {
+      return false
     }
   }
 

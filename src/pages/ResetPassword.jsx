@@ -282,8 +282,7 @@ function ResetPassword() {
                   Reset Link Not Compatible
                 </h3>
                 <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-                  This password reset link appears to be from an older system or different format. 
-                  For security and compatibility, please request a new password reset using our current system.
+                  This reset link appears to be invalid or expired. Please request a new password reset link.
                 </p>
               </div>
 

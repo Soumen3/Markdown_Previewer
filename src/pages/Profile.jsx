@@ -1,8 +1,10 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '../hooks/useToast'
+import { authService } from '../services/auth'
 import Header from '../components/Header'
+import EmailVerificationBanner from '../components/EmailVerificationBanner'
 
 const Profile = () => {
   const navigate = useNavigate()
@@ -12,10 +14,28 @@ const Profile = () => {
   const [isEditing, setIsEditing] = useState(false)
   const [isUpdating, setIsUpdating] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [isEmailVerified, setIsEmailVerified] = useState(false)
+  const [isCheckingVerification, setIsCheckingVerification] = useState(true)
+  const [isSendingVerification, setIsSendingVerification] = useState(false)
   const [formData, setFormData] = useState({
     name: user?.name || '',
     email: user?.email || ''
   })
+
+  useEffect(() => {
+    const checkEmailVerification = async () => {
+      try {
+        const verified = await authService.isEmailVerified()
+        setIsEmailVerified(verified)
+      } catch (error) {
+        console.error('Error checking email verification:', error)
+      } finally {
+        setIsCheckingVerification(false)
+      }
+    }
+
+    checkEmailVerification()
+  }, [])
 
   const handleInputChange = (e) => {
     const { name, value } = e.target
@@ -64,6 +84,22 @@ const Profile = () => {
     }
   }
 
+  const handleSendVerificationEmail = async () => {
+    if (isSendingVerification) return
+
+    setIsSendingVerification(true)
+    try {
+      const verificationUrl = `${window.location.origin}/verify-email`
+      await authService.sendEmailVerification(verificationUrl)
+      toast.success('Verification email sent! Please check your inbox.')
+    } catch (error) {
+      console.error('Error sending verification email:', error)
+      toast.error('Failed to send verification email. Please try again.')
+    } finally {
+      setIsSendingVerification(false)
+    }
+  }
+
   const handleCancel = () => {
     setIsEditing(false)
     setFormData({
@@ -94,6 +130,7 @@ const Profile = () => {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <Header />
+      <EmailVerificationBanner />
       
       <div className="container mx-auto px-4 sm:px-6 py-8 sm:py-12 max-w-2xl">
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4 sm:p-8">
@@ -146,6 +183,44 @@ const Profile = () => {
                 className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white disabled:bg-gray-100 dark:disabled:bg-gray-600 disabled:cursor-not-allowed"
                 required
               />
+              
+              {/* Email Verification Status */}
+              <div className="mt-3 p-3 rounded-lg border">
+                {isCheckingVerification ? (
+                  <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2"></div>
+                    Checking verification status...
+                  </div>
+                ) : isEmailVerified ? (
+                  <div className="flex items-center text-sm text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800">
+                    <svg className="h-4 w-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                    </svg>
+                    Email verified
+                  </div>
+                ) : (
+                  <div className="bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800">
+                    <div className="flex items-start">
+                      <svg className="h-4 w-4 mt-0.5 mr-2 text-yellow-600 dark:text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                      </svg>
+                      <div className="flex-1">
+                        <p className="text-sm text-yellow-800 dark:text-yellow-200">
+                          Email not verified. Please verify your email to access all features.
+                        </p>
+                        <button
+                          type="button"
+                          onClick={handleSendVerificationEmail}
+                          disabled={isSendingVerification}
+                          className="mt-2 text-sm font-medium text-yellow-800 dark:text-yellow-200 hover:text-yellow-900 dark:hover:text-yellow-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {isSendingVerification ? 'Sending...' : 'Send verification email'}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Action Buttons */}

@@ -48,6 +48,11 @@ function Signup() {
       removeToast(loadingToastId)
       toast.signupSuccess(user.name.split(' ')[0])
       
+      // Show email verification message
+      setTimeout(() => {
+        toast.info('Please check your email to verify your account and unlock all features.')
+      }, 2000)
+      
       navigate(from, { replace: true }) // Redirect to intended destination after successful signup
       
     } catch (error) {

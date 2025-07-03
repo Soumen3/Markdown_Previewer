@@ -5,6 +5,7 @@ import Login from './pages/Login'
 import Signup from './pages/Signup'
 import ForgotPassword from './pages/ForgotPassword'
 import ResetPassword from './pages/ResetPassword'
+import VerifyEmail from './pages/VerifyEmail'
 import Dashboard from './pages/Dashboard'
 import MarkdownEditor from './pages/MarkdownEditor'
 import Profile from './pages/Profile'
@@ -104,6 +105,14 @@ function App() {
               element={
                 <PublicRoute>
                   <ResetPassword />
+                </PublicRoute>
+              } 
+            />
+            <Route 
+              path="/verify-email" 
+              element={
+                <PublicRoute>
+                  <VerifyEmail />
                 </PublicRoute>
               } 
             />

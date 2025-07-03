@@ -41,6 +41,18 @@ function Login() {
       removeToast(loadingToastId)
       toast.loginSuccess(user.name.split(' ')[0])
       
+      // Check email verification status and show reminder if needed
+      try {
+        const isVerified = await authService.isEmailVerified()
+        if (!isVerified) {
+          setTimeout(() => {
+            toast.info('Don\'t forget to verify your email to access all features.')
+          }, 3000)
+        }
+      } catch (verificationError) {
+        console.debug('Could not check verification status:', verificationError)
+      }
+      
       navigate(from, { replace: true }) // Redirect to intended destination after successful login
       
     } catch (error) {

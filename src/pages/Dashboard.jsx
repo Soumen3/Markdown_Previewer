@@ -9,6 +9,7 @@ import {
   duplicateMarkdownDocument 
 } from '../services/appwriteService'
 import Header from '../components/Header'
+import EmailVerificationBanner from '../components/EmailVerificationBanner'
 import Dialog from '../components/Dialog'
 import MarkdownFileCard from '../components/MarkdownFileCard'
 
@@ -200,6 +201,9 @@ function Dashboard() {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Header */}
       <Header />
+      
+      {/* Email Verification Banner */}
+      <EmailVerificationBanner />
       
       {/* Dashboard Header */}
       <div className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
