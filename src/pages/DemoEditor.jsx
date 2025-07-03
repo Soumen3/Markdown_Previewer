@@ -4,6 +4,7 @@ import { marked } from 'marked'
 import DOMPurify from 'dompurify'
 import { useTheme } from '../hooks/useTheme'
 import { useToast } from '../hooks/useToast'
+import { useAuth } from '../contexts/AuthContext'
 import { useMarkdownOperations } from '../hooks/useMarkdownOperations'
 import { getSettings } from '../utils/settings'
 import {
@@ -32,6 +33,7 @@ import PreviewModeInfo from '../components/Editor/PreviewModeInfo'
 const DemoEditor = () => {
   const { isDark } = useTheme()
   const { toast } = useToast()
+  const { user } = useAuth()
   const dispatch = useDispatch()
   const textareaRef = useRef(null)
   const hasLoadedRef = useRef(false)
@@ -302,21 +304,23 @@ greetUser("Developer");
     <div className={`min-h-screen ${isDark ? 'dark bg-gray-900' : 'bg-gray-50'}`}>
       <Header />
       
-      {/* Demo banner */}
-      <div className="bg-gradient-to-r from-blue-500 to-purple-600 text-white px-4 py-3 text-center shadow-lg">
-        <div className="flex items-center justify-center space-x-4">
-          <span className="text-sm font-medium flex items-center">
-            <span className="mr-2">🎯</span>
-            <span>Demo Mode Active - Try all features risk-free!</span>
-          </span>
-          <button 
-            onClick={() => window.location.href = '/signup'}
-            className="bg-white text-blue-600 px-4 py-1 rounded-full text-sm font-semibold hover:bg-gray-100 transition-colors"
-          >
-            Sign Up Free
-          </button>
+      {/* Demo banner - only show if user is not logged in */}
+      {!user && (
+        <div className="bg-gradient-to-r from-blue-500 to-purple-600 text-white px-4 py-3 text-center shadow-lg">
+          <div className="flex items-center justify-center space-x-4">
+            <span className="text-sm font-medium flex items-center">
+              <span className="mr-2">🎯</span>
+              <span>Demo Mode Active - Try all features risk-free!</span>
+            </span>
+            <button 
+              onClick={() => window.location.href = '/signup'}
+              className="bg-white text-blue-600 px-4 py-1 rounded-full text-sm font-semibold hover:bg-gray-100 transition-colors"
+            >
+              Sign Up Free
+            </button>
+          </div>
         </div>
-      </div>
+      )}
 
       <div className="flex flex-col h-screen pt-16">
         <EditorHeader {...demoEditorProps} isDemo={true} />
