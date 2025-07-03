@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useTheme } from '../hooks/useTheme'
+import { useAuth } from '../contexts/AuthContext'
 import { authService } from '../services/auth'
 import { useToast } from '../hooks/useToast'
 
@@ -8,6 +9,7 @@ function VerifyEmail() {
   const { isDark } = useTheme()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
+  const { user } = useAuth()
   const [isLoading, setIsLoading] = useState(true)
   const [isVerified, setIsVerified] = useState(false)
   const [error, setError] = useState('')
@@ -57,11 +59,21 @@ function VerifyEmail() {
   }
 
   const handleContinue = () => {
-    navigate('/login')
+    // If user is logged in, go to dashboard, otherwise go to login
+    if (user) {
+      navigate('/dashboard')
+    } else {
+      navigate('/login')
+    }
   }
 
   const handleBackToLogin = () => {
-    navigate('/login')
+    // If user is logged in, go to dashboard, otherwise go to login
+    if (user) {
+      navigate('/dashboard')
+    } else {
+      navigate('/login')
+    }
   }
 
   // Show loading state
@@ -112,7 +124,7 @@ function VerifyEmail() {
                   onClick={handleContinue}
                   className="w-full inline-flex justify-center items-center px-4 py-2 border border-transparent rounded-md shadow-sm bg-blue-600 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200 transform hover:scale-105"
                 >
-                  Continue to login
+                  {user ? 'Continue to Dashboard' : 'Continue to Login'}
                 </button>
               </>
             ) : (
@@ -145,7 +157,7 @@ function VerifyEmail() {
                     onClick={handleBackToLogin}
                     className="w-full sm:w-auto inline-flex justify-center items-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-white dark:bg-gray-700 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200"
                   >
-                    Back to Login
+                    {user ? 'Back to Dashboard' : 'Back to Login'}
                   </button>
                 </div>
               </>

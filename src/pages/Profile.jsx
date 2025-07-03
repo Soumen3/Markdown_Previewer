@@ -39,10 +39,13 @@ const Profile = () => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }))
+    // Only allow name changes, email is read-only
+    if (name === 'name') {
+      setFormData(prev => ({
+        ...prev,
+        [name]: value
+      }))
+    }
   }
 
   const handleUpdateProfile = async (e) => {
@@ -51,7 +54,8 @@ const Profile = () => {
 
     setIsUpdating(true)
     try {
-      await updateProfile(formData)
+      // Only update the name, not the email
+      await updateProfile({ name: formData.name })
       setIsEditing(false)
       toast.success('Profile updated successfully!')
     } catch (error) {
@@ -104,7 +108,7 @@ const Profile = () => {
     setIsEditing(false)
     setFormData({
       name: user?.name || '',
-      email: user?.email || ''
+      email: user?.email || '' // Keep email but it won't be editable
     })
   }
 
@@ -172,17 +176,20 @@ const Profile = () => {
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Email Address
+                <span className="text-xs text-gray-500 dark:text-gray-400 ml-2">(Read-only)</span>
               </label>
               <input
                 type="email"
                 id="email"
                 name="email"
                 value={formData.email}
-                onChange={handleInputChange}
-                disabled={!isEditing}
-                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white disabled:bg-gray-100 dark:disabled:bg-gray-600 disabled:cursor-not-allowed"
-                required
+                disabled={true}
+                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-100 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed"
+                readOnly
               />
+              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                Email address cannot be changed for security reasons. Contact support if you need to change your email.
+              </p>
               
               {/* Email Verification Status */}
               <div className="mt-3 p-3 rounded-lg border">

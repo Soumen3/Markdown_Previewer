@@ -2,4 +2,4 @@
 2. invalid the link after use ✅
 3. Auto save
 4. email cannot be updated
-5. if logged in control going to dashboard while verifying URL
+5. if logged in control going to dashboard while verifying URL ✅

@@ -110,11 +110,7 @@ function App() {
             />
             <Route 
               path="/verify-email" 
-              element={
-                <PublicRoute>
-                  <VerifyEmail />
-                </PublicRoute>
-              } 
+              element={<VerifyEmail />} 
             />
             <Route 
               path="/dashboard" 
