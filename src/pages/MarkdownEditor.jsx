@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useDispatch, useSelector } from 'react-redux'
 import { marked } from 'marked'
@@ -7,6 +7,7 @@ import { useTheme } from '../hooks/useTheme'
 import { useToast } from '../hooks/useToast'
 import { useAuth } from '../contexts/AuthContext'
 import { useMarkdownOperations } from '../hooks/useMarkdownOperations'
+import { getSettings } from '../utils/settings'
 import {
   loadDocument,
   saveDocument,
@@ -48,6 +49,14 @@ const MarkdownEditor = () => {
   const textareaRef = useRef(null)
   const hasLoadedRef = useRef(false)
   const hasFailedRef = useRef(false) // Track failed attempts to prevent retries
+  const autoSaveTimeoutRef = useRef(null)
+  const lastAutoSaveRef = useRef(null)
+  const [autoSaveStatus, setAutoSaveStatus] = useState('') // '', 'saving', 'saved', 'failed'
+  const [settings, setSettings] = useState(getSettings())
+  
+  // Auto-save configuration from settings
+  const AUTO_SAVE_DELAY = settings.autoSaveDelay || 3000
+  const AUTO_SAVE_INTERVAL = 30000 // Maximum 30 seconds between saves
   
   // Redux selectors - Get state from Redux store
   const markdownText = useSelector(selectMarkdownText)
@@ -66,6 +75,61 @@ const MarkdownEditor = () => {
 
   // Use the markdown operations hook for toolbar functionality
   const { insertMarkdown } = useMarkdownOperations(textareaRef, (text) => dispatch(setMarkdownText(text)))
+
+  // Auto-save function
+  const performAutoSave = async (isIntervalSave = false) => {
+    // Don't auto-save if user is not logged in or if there's no content to save
+    if (!user || !user.$id || !markdownText.trim()) {
+      return
+    }
+
+    // Don't auto-save if we're currently saving or if there are no unsaved changes
+    if (isSaving || !hasUnsavedChanges) {
+      return
+    }
+
+    // Don't auto-save for new documents that haven't been manually saved yet
+    if (!currentFileId && fileId === 'new') {
+      return
+    }
+
+    try {
+      setAutoSaveStatus('saving')
+      
+      const result = await dispatch(saveDocument({
+        fileId: currentFileId || fileId,
+        title: fileName,
+        content: markdownText,
+        userId: user.$id,
+        isAutoSave: true // Flag to indicate this is an auto-save
+      })).unwrap()
+      
+      // Navigate to new URL if it was a new document (shouldn't happen in auto-save, but just in case)
+      if (result.newFileId) {
+        navigate(`/editor/${result.newFileId}`, { replace: true })
+      }
+      
+      lastAutoSaveRef.current = Date.now()
+      setAutoSaveStatus('saved')
+      
+      // Clear the saved status after a few seconds
+      setTimeout(() => {
+        setAutoSaveStatus('')
+      }, 2000)
+      
+      // No toast notification for auto-save - status indicator is sufficient
+    } catch (error) {
+      console.error('Auto-save failed:', error)
+      setAutoSaveStatus('failed')
+      
+      // Clear the failed status after a few seconds
+      setTimeout(() => {
+        setAutoSaveStatus('')
+      }, 3000)
+      
+      // Don't show error toast for auto-save failures to avoid spamming user
+    }
+  }
 
   // Configure marked options for better rendering
   marked.setOptions({
@@ -105,6 +169,50 @@ const MarkdownEditor = () => {
   const handleInputChange = (event) => {
     dispatch(setMarkdownText(event.target.value))
   }
+
+  // Auto-save effect - triggers auto-save when content changes
+  useEffect(() => {
+    // Clear any existing timeout
+    if (autoSaveTimeoutRef.current) {
+      clearTimeout(autoSaveTimeoutRef.current)
+    }
+
+    // Don't set up auto-save if disabled, empty content, or user not logged in
+    if (!settings.autoSave || !markdownText.trim() || !user || !user.$id) {
+      return
+    }
+
+    // Set up delayed auto-save (debounced)
+    autoSaveTimeoutRef.current = setTimeout(() => {
+      performAutoSave()
+    }, AUTO_SAVE_DELAY)
+
+    // Cleanup function
+    return () => {
+      if (autoSaveTimeoutRef.current) {
+        clearTimeout(autoSaveTimeoutRef.current)
+      }
+    }
+  }, [markdownText, fileName, user, currentFileId, fileId, hasUnsavedChanges, isSaving, settings.autoSave, AUTO_SAVE_DELAY])
+
+  // Interval-based auto-save effect - ensures saves happen even during continuous editing
+  useEffect(() => {
+    if (!settings.autoSave) {
+      return
+    }
+
+    const intervalSave = setInterval(() => {
+      const now = Date.now()
+      const timeSinceLastSave = now - (lastAutoSaveRef.current || 0)
+      
+      // If it's been more than AUTO_SAVE_INTERVAL since last save, perform auto-save
+      if (timeSinceLastSave >= AUTO_SAVE_INTERVAL && hasUnsavedChanges && user && user.$id) {
+        performAutoSave(true)
+      }
+    }, AUTO_SAVE_INTERVAL)
+
+    return () => clearInterval(intervalSave)
+  }, [hasUnsavedChanges, user, settings.autoSave])
 
   // Effect to handle save errors (load errors are handled in the loadDoc function)
   // This provides more specific error handling and navigation control
@@ -232,6 +340,9 @@ const MarkdownEditor = () => {
     }
 
     try {
+      // Clear auto-save status when manually saving
+      setAutoSaveStatus('')
+      
       const result = await dispatch(saveDocument({
         fileId: currentFileId || fileId,
         title: fileName,
@@ -286,6 +397,15 @@ const MarkdownEditor = () => {
     }
   }
 
+  // Cleanup effect - clear auto-save timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (autoSaveTimeoutRef.current) {
+        clearTimeout(autoSaveTimeoutRef.current)
+      }
+    }
+  }, [])
+
   // Format date for display
   const formatDate = (dateString) => {
     if (!dateString) return ''
@@ -317,6 +437,17 @@ const MarkdownEditor = () => {
         handleSave={handleSave}
         isSaving={isSaving}
         user={user}
+        autoSaveStatus={autoSaveStatus}
+        hasUnsavedChanges={hasUnsavedChanges}
+        autoSaveEnabled={settings.autoSave}
+        onAutoSaveToggle={(enabled) => {
+          const newSettings = { ...settings, autoSave: enabled }
+          setSettings(newSettings)
+          // Save to localStorage
+          import('../utils/settings').then(({ saveSettings }) => {
+            saveSettings(newSettings)
+          })
+        }}
       />
 
       {/* Toolbar - markdown formatting buttons and utility actions */}

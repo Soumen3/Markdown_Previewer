@@ -144,7 +144,7 @@ export const loadDocument = createAsyncThunk(
 
 export const saveDocument = createAsyncThunk(
   'editor/saveDocument',
-  async ({ fileId, title, content, userId }, { rejectWithValue }) => {
+  async ({ fileId, title, content, userId, isAutoSave = false }, { rejectWithValue }) => {
     try {
       const documentData = {
         title: title.replace('.md', ''),
@@ -158,7 +158,7 @@ export const saveDocument = createAsyncThunk(
           title: documentData.title,
           content: documentData.content
         })
-        return { fileId, ...documentData, isNew: false }
+        return { fileId, ...documentData, isNew: false, isAutoSave }
       } else {
         // Create new document
         const response = await createMarkdownDocument(documentData)
@@ -166,7 +166,8 @@ export const saveDocument = createAsyncThunk(
           fileId: response.$id, 
           ...documentData, 
           isNew: true,
-          newFileId: response.$id 
+          newFileId: response.$id,
+          isAutoSave
         }
       }
     } catch (error) {
