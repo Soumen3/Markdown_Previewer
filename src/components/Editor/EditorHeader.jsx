@@ -18,7 +18,8 @@ const EditorHeader = ({
   autoSaveStatus,
   hasUnsavedChanges,
   autoSaveEnabled,
-  onAutoSaveToggle
+  onAutoSaveToggle,
+  isDemo = false
 }) => {
   const navigate = useNavigate()
 
@@ -30,22 +31,22 @@ const EditorHeader = ({
           <div className="flex items-center space-x-2 sm:space-x-4 min-w-0 flex-1">
             {!isFullscreen && (
               <button
-                onClick={() => navigate('/dashboard')}
+                onClick={() => navigate(isDemo ? '/' : '/dashboard')}
                 className="hidden sm:flex items-center text-sm text-gray-600 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 transition-colors flex-shrink-0"
               >
                 <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                 </svg>
-                <span className="hidden md:inline">Back to Dashboard</span>
+                <span className="hidden md:inline">{isDemo ? 'Back to Home' : 'Back to Dashboard'}</span>
                 <span className="md:hidden">Back</span>
               </button>
             )}
             {/* Mobile Back Button */}
             {!isFullscreen && (
               <button
-                onClick={() => navigate('/dashboard')}
+                onClick={() => navigate(isDemo ? '/' : '/dashboard')}
                 className="sm:hidden p-2 text-gray-600 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 transition-colors flex-shrink-0"
-                title="Back to Dashboard"
+                title={isDemo ? 'Back to Home' : 'Back to Dashboard'}
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />

@@ -8,6 +8,7 @@ import ResetPassword from './pages/ResetPassword'
 import VerifyEmail from './pages/VerifyEmail'
 import Dashboard from './pages/Dashboard'
 import MarkdownEditor from './pages/MarkdownEditor'
+import DemoEditor from './pages/DemoEditor'
 import Profile from './pages/Profile'
 import ProtectedRoute from './components/ProtectedRoute'
 import PublicRoute from './components/PublicRoute'
@@ -113,6 +114,10 @@ function App() {
               element={<VerifyEmail />} 
             />
             <Route 
+              path="/demo" 
+              element={<DemoEditor />} 
+            />
+            <Route 
               path="/dashboard" 
               element={
                 <ProtectedRoute>
@@ -136,14 +141,6 @@ function App() {
                 </ProtectedRoute>
               } 
             />
-            {/* <Route 
-              path="/editor" 
-              element={
-                <ProtectedRoute>
-                  <MarkdownEditor />
-                </ProtectedRoute>
-              } 
-            /> */}
           </Routes>
           <ToastContainer />
         </Router>

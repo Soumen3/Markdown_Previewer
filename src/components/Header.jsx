@@ -137,7 +137,6 @@ function Header() {
         <div className="hidden md:flex items-center space-x-6">
           <a href="#features" className="text-gray-600 hover:text-blue-600 dark:text-gray-300 dark:hover:text-blue-400 transition-colors">Features</a>
           <a href="#demo" className="text-gray-600 hover:text-blue-600 dark:text-gray-300 dark:hover:text-blue-400 transition-colors">Demo</a>
-          <a href="#about" className="text-gray-600 hover:text-blue-600 dark:text-gray-300 dark:hover:text-blue-400 transition-colors">About</a>
           
           <button
             onClick={handleDashboardClick}

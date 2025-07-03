@@ -1,5 +1,0 @@
-1. email verify after login ✅
-2. invalid the link after use ✅
-3. Auto save
-4. email cannot be updated ✅
-5. if logged in control going to dashboard while verifying URL ✅
