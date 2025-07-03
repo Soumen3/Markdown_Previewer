@@ -322,7 +322,7 @@ greetUser("Developer");
         </div>
       )}
 
-      <div className="flex flex-col h-screen pt-16">
+      <div className="flex flex-col h-screen">
         <EditorHeader {...demoEditorProps} isDemo={true} />
         
         {isPreviewMode && <PreviewModeInfo />}
