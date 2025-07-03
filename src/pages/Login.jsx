@@ -5,6 +5,7 @@ import { LoginForm } from '../components/forms'
 import { authService } from '../services/auth'
 import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '../hooks/useToast'
+import Footer from '../components/Footer'
 
 function Login() {
   const { isDark } = useTheme()
@@ -110,8 +111,9 @@ function Login() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col justify-center py-6 px-4 sm:py-12 sm:px-6 lg:px-8 animate-in fade-in duration-500">
-      <div className="sm:mx-auto sm:w-full sm:max-w-md animate-in slide-in-from-top duration-700 delay-200">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col">
+      <div className="flex-grow flex flex-col justify-center py-6 px-4 sm:py-12 sm:px-6 lg:px-8 animate-in fade-in duration-500">
+        <div className="sm:mx-auto sm:w-full sm:max-w-md animate-in slide-in-from-top duration-700 delay-200">
         {/* Back to Home Link */}
         <div className="mb-4">
           <button
@@ -167,6 +169,8 @@ function Login() {
           </div>
         </div>
       </div>
+      </div>
+      <Footer />
     </div>
   )
 }

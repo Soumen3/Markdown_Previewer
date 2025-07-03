@@ -5,6 +5,7 @@ import { SignupForm } from '../components/forms'
 import { authService } from '../services/auth'
 import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '../hooks/useToast'
+import Footer from '../components/Footer'
 
 function Signup() {
   const { isDark } = useTheme()
