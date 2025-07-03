@@ -12,7 +12,6 @@ import DemoEditor from './pages/DemoEditor'
 import Profile from './pages/Profile'
 import ProtectedRoute from './components/ProtectedRoute'
 import PublicRoute from './components/PublicRoute'
-import EnvDebug from './components/EnvDebug'
 import { client } from './lib/appwrite'
 import { useEffect, useState } from 'react'
 import { AppwriteException } from 'appwrite'
@@ -144,7 +143,6 @@ function App() {
             />
           </Routes>
           <ToastContainer />
-          <EnvDebug />
         </Router>
       </AuthProvider>
     </ToastProvider>
